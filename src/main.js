@@ -41,6 +41,10 @@ $('run').addEventListener('click', async () => {
     fs.addFile('/app/input.tex', $('input').value);
     const result = await perl.runFile('/app/latexindent.pl', ['/app/input.tex']);
     setStatus(`Done. exit=${result?.exitCode}, success=${result?.success}`);
+    if (result && !result.success && result.error) {
+      stderrBuf += `\n[runFile error]\n${result.error}\n`;
+      $('stderr').textContent = stderrBuf;
+    }
   } catch (e) {
     setStatus('Run threw: ' + (e?.message ?? e));
     console.error(e);
