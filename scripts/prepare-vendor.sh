@@ -19,8 +19,10 @@ mkdir -p "$VENDOR_DIR" "$OUT_DIR/LatexIndent" "$OUT_DIR/YAML" "$OUT_DIR/File"
 echo ">> cloning latexindent.pl@$LATEXINDENT_REF"
 git clone --depth 1 --branch "$LATEXINDENT_REF" "$LATEXINDENT_REPO" "$VENDOR_DIR/latexindent" >/dev/null
 
+PATCHES_DIR="$PWD/patches"
+
 echo ">> applying patches/latexindent.patch"
-( cd "$VENDOR_DIR/latexindent" && git apply "$PWD/../../patches/latexindent.patch" )
+( cd "$VENDOR_DIR/latexindent" && patch -p1 --no-backup-if-mismatch < "$PATCHES_DIR/latexindent.patch" )
 
 echo ">> downloading YAML::Tiny"
 curl -sL -o "$VENDOR_DIR/YAML-Tiny.pm" "$YAML_TINY_URL"
@@ -28,7 +30,7 @@ curl -sL -o "$VENDOR_DIR/YAML-Tiny.pm" "$YAML_TINY_URL"
 echo ">> applying patches/yaml-tiny.patch"
 mkdir -p "$VENDOR_DIR/yaml-tiny/YAML"
 cp "$VENDOR_DIR/YAML-Tiny.pm" "$VENDOR_DIR/yaml-tiny/YAML/Tiny.pm"
-( cd "$VENDOR_DIR/yaml-tiny" && git apply --unsafe-paths --directory="$PWD" "$PWD/../../patches/yaml-tiny.patch" )
+( cd "$VENDOR_DIR/yaml-tiny" && patch -p1 --no-backup-if-mismatch < "$PATCHES_DIR/yaml-tiny.patch" )
 
 echo ">> populating $OUT_DIR"
 cp "$VENDOR_DIR/latexindent/latexindent.pl"          "$OUT_DIR/"
