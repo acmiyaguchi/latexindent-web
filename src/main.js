@@ -1,11 +1,63 @@
 import { ZeroPerl, MemoryFileSystem } from '@6over3/zeroperl-ts';
 import wasmUrl from '@6over3/zeroperl-ts/zeroperl.wasm?url';
+import { EditorView, basicSetup } from 'codemirror';
+import { EditorState } from '@codemirror/state';
+import { keymap } from '@codemirror/view';
+import { indentWithTab } from '@codemirror/commands';
+import { StreamLanguage, indentUnit } from '@codemirror/language';
+import { stex } from '@codemirror/legacy-modes/mode/stex';
 
 const $ = (id) => document.getElementById(id);
 const setStatus = (s) => { $('status').textContent = s; };
 const decode = (d) => typeof d === 'string' ? d : new TextDecoder().decode(d);
 
+const stexLang = StreamLanguage.define(stex);
+
+const initialDoc = `\\documentclass{article}
+\\begin{document}
+\\begin{itemize}
+\\item one
+\\begin{enumerate}
+\\item nested
+\\item another
+\\end{enumerate}
+\\item two
+\\end{itemize}
+\\end{document}
+`;
+
+const inputView = new EditorView({
+  doc: initialDoc,
+  parent: $('input-host'),
+  extensions: [
+    basicSetup,
+    keymap.of([indentWithTab]),
+    indentUnit.of('\t'),
+    EditorState.tabSize.of(4),
+    stexLang,
+  ],
+});
+
+const outputView = new EditorView({
+  doc: '',
+  parent: $('output-host'),
+  extensions: [
+    basicSetup,
+    stexLang,
+    EditorState.tabSize.of(4),
+    EditorState.readOnly.of(true),
+    EditorView.editable.of(false),
+  ],
+});
+
+const setOutput = (text) => {
+  outputView.dispatch({
+    changes: { from: 0, to: outputView.state.doc.length, insert: text },
+  });
+};
+
 let stderrBuf = '';
+let stdoutBuf = '';
 
 setStatus('Fetching latexindent source files…');
 const manifest = (await (await fetch('app/files.txt')).text()).trim().split('\n');
@@ -21,7 +73,10 @@ setStatus('Loading Perl runtime (~25MB wasm, first load is slow)…');
 const perl = await ZeroPerl.create({
   fileSystem: fs,
   fetch: () => fetch(wasmUrl),
-  stdout: (data) => { $('output').value += decode(data); },
+  stdout: (data) => {
+    stdoutBuf += decode(data);
+    setOutput(stdoutBuf);
+  },
   stderr: (data) => {
     stderrBuf += decode(data);
     $('stderr').textContent = stderrBuf;
@@ -34,19 +89,23 @@ $('run').disabled = false;
 $('run').addEventListener('click', async () => {
   $('run').disabled = true;
   stderrBuf = '';
-  $('output').value = '';
+  stdoutBuf = '';
+  setOutput('');
   $('stderr').textContent = '';
   setStatus('Running…');
+  const appendLog = (line) => {
+    stderrBuf += (stderrBuf && !stderrBuf.endsWith('\n') ? '\n' : '') + line + '\n';
+    $('stderr').textContent = stderrBuf;
+  };
   try {
-    fs.addFile('/app/input.tex', $('input').value);
+    fs.addFile('/app/input.tex', inputView.state.doc.toString());
     const result = await perl.runFile('/app/latexindent.pl', ['/app/input.tex']);
-    setStatus(`Done. exit=${result?.exitCode}, success=${result?.success}`);
-    if (result && !result.success && result.error) {
-      stderrBuf += `\n[runFile error]\n${result.error}\n`;
-      $('stderr').textContent = stderrBuf;
-    }
+    setStatus(result?.success ? 'Done.' : 'Failed.');
+    appendLog(`[exit ${result?.exitCode ?? '?'}]`);
+    if (result && !result.success && result.error) appendLog(result.error);
   } catch (e) {
-    setStatus('Run threw: ' + (e?.message ?? e));
+    setStatus('Failed.');
+    appendLog('[threw] ' + (e?.message ?? e));
     console.error(e);
   } finally {
     $('run').disabled = false;

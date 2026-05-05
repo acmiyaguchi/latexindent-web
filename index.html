@@ -10,6 +10,9 @@
     .row { display: flex; gap: 1em; }
     .col { flex: 1; display: flex; flex-direction: column; }
     textarea { width: 100%; min-height: 380px; font-family: ui-monospace, monospace; font-size: 13px; box-sizing: border-box; }
+    .editor-host { border: 1px solid #ccc; border-radius: 4px; }
+    .editor-host .cm-editor { height: 380px; }
+    .editor-host .cm-scroller { font-family: ui-monospace, monospace; font-size: 13px; }
     #stderr { height: 140px; background: #f7f7f7; border: 1px solid #ccc; padding: 0.5em; overflow: auto; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px; margin-top: 0.5em; }
     #status { padding: 0.4em 0.7em; background: #eef; border: 1px solid #ccd; border-radius: 4px; margin: 0.5em 0; font-size: 13px; }
     button { padding: 0.5em 1em; font-size: 14px; cursor: pointer; }
@@ -32,22 +35,11 @@
   <div class="row">
     <div class="col">
       <h3>Input (LaTeX)</h3>
-      <textarea id="input">\documentclass{article}
-\begin{document}
-\begin{itemize}
-\item one
-\begin{enumerate}
-\item nested
-\item another
-\end{enumerate}
-\item two
-\end{itemize}
-\end{document}
-</textarea>
+      <div id="input-host" class="editor-host"></div>
     </div>
     <div class="col">
       <h3>Output (indented)</h3>
-      <textarea id="output" readonly></textarea>
+      <div id="output-host" class="editor-host"></div>
     </div>
   </div>
   <h3>stderr / log</h3>

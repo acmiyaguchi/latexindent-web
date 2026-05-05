@@ -9,7 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@6over3/zeroperl-ts": "1.0.10"
+    "@6over3/zeroperl-ts": "1.0.10",
+    "@codemirror/commands": "^6.10.3",
+    "@codemirror/language": "^6.12.3",
+    "@codemirror/legacy-modes": "^6.5.2",
+    "@codemirror/view": "^6.41.1",
+    "codemirror": "^6.0.2"
   },
   "devDependencies": {
     "vite": "^5.4.0"
