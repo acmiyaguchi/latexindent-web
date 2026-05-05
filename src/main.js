@@ -34,6 +34,7 @@ const inputView = new EditorView({
     keymap.of([indentWithTab]),
     indentUnit.of('\t'),
     EditorState.tabSize.of(4),
+    EditorView.lineWrapping,
     stexLang,
   ],
 });
@@ -45,6 +46,7 @@ const outputView = new EditorView({
     basicSetup,
     stexLang,
     EditorState.tabSize.of(4),
+    EditorView.lineWrapping,
     EditorState.readOnly.of(true),
     EditorView.editable.of(false),
   ],
