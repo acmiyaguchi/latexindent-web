@@ -1,7 +1,10 @@
 # latexindent-web
 
-[latexindent.pl][upstream] running entirely in the browser via [zeroperl][zeroperl]
-(Perl 5.42 compiled to WebAssembly / WASI).
+> Built with Claude Opus 4.7.
+
+[latexindent.pl][upstream] (v4.0.1) running entirely in the browser via
+[zeroperl][zeroperl] (Perl 5.42 compiled to WebAssembly / WASI), with a
+[CodeMirror 6][cm6] editor for input and output.
 
 ## Why
 
@@ -26,13 +29,18 @@ npm run build             # → dist/, deployable to any static host
 ## How it works
 
 1. `scripts/prepare-vendor.sh` clones the upstream latexindent.pl repo,
-   applies the patches in `patches/`, copies the result plus our overrides
-   into `public/app/`, and writes a `files.txt` manifest of every Perl source
-   file.
+   downloads `YAML::Tiny`, applies the patches in `patches/`, copies the
+   result plus our overrides into `public/app/`, and writes a `files.txt`
+   manifest of every `.pl` / `.pm` / `.yaml` file.
 2. At runtime, the page fetches each file from `public/app/` and inserts it
    into zeroperl's `MemoryFileSystem`.
-3. Click *Run latexindent* and the page invokes `runFile('/app/latexindent.pl',
-   ['/app/input.tex'])`, captures stdout, and shows it in the right pane.
+3. The input pane is a CodeMirror 6 editor with `stex` syntax highlighting,
+   tab-as-indent, and line wrapping. The output pane is a read-only
+   CodeMirror editor with the same highlighting.
+4. Click *Run latexindent* and the page writes the input editor's contents
+   to `/app/input.tex`, invokes `runFile('/app/latexindent.pl',
+   ['/app/input.tex'])`, captures stdout into the output editor, and routes
+   stderr to the log pane.
 
 ## Patches
 
@@ -68,3 +76,4 @@ directory in the browser.
 
 [upstream]: https://github.com/cmhughes/latexindent.pl
 [zeroperl]: https://github.com/6over3/zeroperl
+[cm6]: https://codemirror.net/
