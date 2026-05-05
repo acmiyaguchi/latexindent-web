@@ -48,7 +48,6 @@ const outputView = new EditorView({
     EditorState.tabSize.of(4),
     EditorView.lineWrapping,
     EditorState.readOnly.of(true),
-    EditorView.editable.of(false),
   ],
 });
 
