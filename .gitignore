@@ -1,0 +1,6 @@
+node_modules/
+dist/
+vendored/
+public/app/
+.playwright-cli/
+*.log

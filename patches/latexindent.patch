@@ -1,0 +1,123 @@
+--- a/latexindent.pl
++++ b/latexindent.pl
+@@ -20,6 +20,7 @@
+ 
+ use strict;
+ use warnings;
++$| = 1;  # (zeroperl POC) autoflush stdout — without this the buffer is dropped on exit under WASI
+ use FindBin;         # help find defaultSettings.yaml
+ use Getopt::Long;    # to get the switches/options/flags
+ 
+@@ -28,7 +29,7 @@
+ use LatexIndent::Document;
+ 
+ use utf8;
+-use Encode qw/ encode decode find_encoding /;
++# (zeroperl POC) Encode disabled - requires Storable XS
+ 
+ use LatexIndent::LogFile qw/$logger/;
+ use LatexIndent::UTF8CmdLineArgsFileOperation
+--- a/LatexIndent/BackUpFileProcedure.pm
++++ b/LatexIndent/BackUpFileProcedure.pm
+@@ -23,7 +23,7 @@
+ use File::Basename;    # to get the filename and directory path
+ use File::Copy;        # to copy the original file to backup (if overwrite option set)
+ use Exporter qw/import/;
+-use Encode   qw/decode/;
++# (zeroperl POC) Encode disabled - requires Storable XS
+ our @EXPORT_OK = qw/create_back_up_file check_if_different/;
+ 
+ use LatexIndent::UTF8CmdLineArgsFileOperation
+--- a/LatexIndent/Document.pm
++++ b/LatexIndent/Document.pm
+@@ -20,8 +20,8 @@
+ use Data::Dumper;
+ use File::Basename;    # to get the filename and directory path
+ 
+-use open ':std', ':encoding(UTF-8)';
+-use Encode qw/decode/;
++use open ':std', ':utf8';
++# (zeroperl POC) Encode disabled - requires Storable XS
+ 
+ # gain access to subroutines in the following modules
+ use LatexIndent::Switches
+@@ -239,13 +239,13 @@
+         ${$self}{fileName} = ${$self}{fileName};
+ 
+         $logger->info("Overwriting file ${$self}{fileName}");
+-        my $OUTPUTFILE = open_with_encode( '>:encoding(UTF-8)', ${$self}{fileName} );
++        my $OUTPUTFILE = open_with_encode( '>:utf8', ${$self}{fileName} );
+         print $OUTPUTFILE ${$self}{body};
+         close($OUTPUTFILE);
+     }
+     elsif ( $switch{outputToFile} ) {
+         $logger->info("Outputting to file ${$self}{outputToFile}");
+-        my $OUTPUTFILE = open_with_encode( '>:encoding(UTF-8)', ${$self}{outputToFile} );
++        my $OUTPUTFILE = open_with_encode( '>:utf8', ${$self}{outputToFile} );
+         print $OUTPUTFILE ${$self}{body};
+         close($OUTPUTFILE);
+     }
+@@ -286,7 +286,7 @@
+         $logfilePath =~ s/\//\\/g;
+     }
+ 
+-    my $logfile = open_with_encode( '>:encoding(UTF-8)', $logfilePath );
++    my $logfile = open_with_encode( '>:utf8', $logfilePath );
+ 
+     if ($logfile) {
+         foreach my $line ( @{LatexIndent::Logger::logFileLines} ) {
+--- a/LatexIndent/FileExtension.pm
++++ b/LatexIndent/FileExtension.pm
+@@ -17,12 +17,12 @@
+ #	For all communication, please visit: https://github.com/cmhughes/latexindent.pl
+ use strict;
+ use warnings;
+-use PerlIO::encoding;
++# (zeroperl POC) use PerlIO::encoding; -- not available in WASI build
+ 
+-#use open ':std', ':encoding(UTF-8)';
++#use open ':std', ':utf8';
+ use File::Basename;    # to get the filename and directory path
+ use Exporter                     qw/import/;
+-use Encode                       qw/decode/;
++# (zeroperl POC) Encode disabled - requires Storable XS
+ use LatexIndent::GetYamlSettings qw/%mainSetting/;
+ use LatexIndent::Switches        qw/%switch $is_check_switch_active/;
+ use LatexIndent::LogFile         qw/$logger/;
+@@ -179,7 +179,7 @@
+     my @lines;
+     if ( $fileName ne "-" ) {
+         my $openFilePossible = 1;
+-        my $MAINFILE         = open_with_encode( '<:encoding(UTF-8)', $fileName ) or ( $openFilePossible = 0 );
++        my $MAINFILE         = open_with_encode( '<:utf8', $fileName ) or ( $openFilePossible = 0 );
+         if ( $openFilePossible == 0 ) {
+             if ( defined ${$self}{multipleFiles} ) {
+                 $logger->warn("*$fileName exists, but could not open it");
+--- a/LatexIndent/GetYamlSettings.pm
++++ b/LatexIndent/GetYamlSettings.pm
+@@ -197,7 +197,7 @@
+ 
+             # change the encoding of the paths according to the field `encoding`
+             if ( $userSettings and ( ref( $userSettings->[0] ) eq 'HASH' ) and $userSettings->[0]->{encoding} ) {
+-                use Encode;
++                # (zeroperl POC) use Encode; -- removed; Encode pulls in Storable XS, which zeroperl excludes
+                 my $encoding       = $userSettings->[0]->{encoding};
+                 my $encodingObject = find_encoding($encoding);
+ 
+--- a/LatexIndent/LogFile.pm
++++ b/LatexIndent/LogFile.pm
+@@ -23,12 +23,12 @@
+ use Exporter              qw/import/;
+ use LatexIndent::Switches qw/%switch/;
+ use LatexIndent::Version  qw/$versionNumber $versionDate/;
+-use Encode                qw/decode/;
++# (zeroperl POC) Encode disabled - requires Storable XS
+ our @EXPORT_OK = qw/process_switches $logger/;
+ our $logger;
+ 
+ use utf8;
+-binmode( STDOUT, ":encoding(utf8)" );
++binmode( STDOUT, ":utf8" );
+ 
+ use LatexIndent::UTF8CmdLineArgsFileOperation
+     qw/copy_with_encode exist_with_encode open_with_encode  zero_with_encode read_yaml_with_encode isdir_with_encode mkdir_with_encode/;

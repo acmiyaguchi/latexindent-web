@@ -1,0 +1,63 @@
+--- a/YAML/Tiny.pm
++++ b/YAML/Tiny.pm
+@@ -180,7 +180,7 @@
+         unless -r _;
+ 
+     # Open unbuffered with strict UTF-8 decoding and no translation layers
+-    open( my $fh, "<:unix:encoding(UTF-8)", $file );
++    open( my $fh, "<:unix:utf8", $file );
+     unless ( $fh ) {
+         $class->_error("Failed to open file '$file': $!");
+     }
+@@ -224,7 +224,7 @@
+         if ( utf8::is_utf8($string) && ! utf8::valid($string) ) {
+             die \<<'...';
+ Read an invalid UTF-8 string (maybe mixed UTF-8 and 8-bit character set).
+-Did you decode with lax ":utf8" instead of strict ":encoding(UTF-8)"?
++Did you decode with lax ":utf8" instead of strict ":utf8"?
+ ...
+         }
+ 
+@@ -573,7 +573,7 @@
+             or $self->_error("Failed to open file '$file' for writing: $!");
+ 
+         # Use no translation and strict UTF-8
+-        binmode( $fh, ":raw:encoding(UTF-8)");
++        binmode( $fh, ":raw:utf8");
+ 
+         flock( $fh, Fcntl::LOCK_EX() )
+             or warn "Couldn't lock '$file' for reading: $!";
+@@ -583,7 +583,7 @@
+         seek $fh, 0, 0;
+     }
+     else {
+-        open $fh, ">:unix:encoding(UTF-8)", $file;
++        open $fh, ">:unix:utf8", $file;
+     }
+ 
+     # serialize and spew to the handle
+@@ -649,9 +649,11 @@
+ }
+ 
+ sub _has_internal_string_value {
+-    my $value = shift;
+-    my $b_obj = B::svref_2object(\$value);  # for round trip problem
+-    return $b_obj->FLAGS & B::SVf_POK();
++    # (zeroperl POC) B.pm not available. Returning 0 means "no internal POK
++    # flag", i.e. treat values without an explicit string flag as numeric
++    # when looks_like_number() is true. Affects round-trip fidelity in rare
++    # cases but is fine for reading defaultSettings.yaml.
++    return 0;
+ }
+ 
+ sub _dump_scalar {
+@@ -799,7 +801,8 @@
+ 
+ 
+ # Use to detect nv or iv
+-use B;
++# (zeroperl POC) B.pm is not bundled; stub _has_internal_string_value below
++# use B;
+ 
+ # XXX-INGY Is flock YAML::Tiny's responsibility?
+ # Some platforms can't flock :-(
