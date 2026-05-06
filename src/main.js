@@ -12,6 +12,9 @@ const $ = (id) => document.getElementById(id);
 const setStatus = (s) => { $('status').textContent = s; };
 const decode = (d) => typeof d === 'string' ? d : new TextDecoder().decode(d);
 
+$('build-time').textContent = __BUILD_TIME__;
+$('build-time').title = __BUILD_TIME__;
+
 const stexLang = StreamLanguage.define(stex);
 const yamlLang = StreamLanguage.define(yaml);
 

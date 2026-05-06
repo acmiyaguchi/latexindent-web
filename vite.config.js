@@ -8,4 +8,7 @@ export default defineConfig({
   // Top-level await requires a modern target. Anyone running this needs
   // WebAssembly anyway (Chrome 57+/Firefox 52+), so esnext is fine.
   build: { target: 'esnext' },
+  define: {
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
 });
