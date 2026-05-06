@@ -165,3 +165,65 @@ test('-t flag populates indent.log and auto-opens the pane', async ({
   await expect(page.locator('#logfile')).toContainText(/TRACE:/);
   await expect(page.locator('#logfile-section')).toHaveJSProperty('open', true);
 });
+
+const logfileText = (page) => page.locator('#logfile').innerText();
+const stderrText = (page) => page.locator('#stderr').innerText();
+
+// `-s` suppresses the formatted body's print to stdout (Document.pm:257),
+// so the output editor stays empty even though the run succeeded. Without
+// -s the same example would write the indented document there.
+test('-s flag suppresses output to the editor', async ({ page }) => {
+  await ready(page);
+  await pickExample(page, 'items1.tex');
+  await page.check('#use-silent');
+  await runAndWait(page);
+  expect(await stderrText(page)).toContain('[exit 0]');
+  // Empty CodeMirror editor reports as `"\n"` (one empty line), so
+  // normalize before checking. Without -s the same input writes its
+  // indented body here and the trim wouldn't be empty.
+  expect((await outputText(page)).trim()).toBe('');
+});
+
+// `-tt` is a strict superset of `-t` (Switches.pm:42 promotes -t when -tt
+// is set), so it must produce strictly more log lines for the same input.
+test('-tt produces more log output than -t', async ({ page }) => {
+  await ready(page);
+  await pickExample(page, 'items1.tex');
+  await page.check('#use-trace');
+  await runAndWait(page);
+  const tLines = (await logfileText(page)).split('\n').length;
+
+  await page.uncheck('#use-trace');
+  await page.check('#use-ttrace');
+  await runAndWait(page);
+  const ttLines = (await logfileText(page)).split('\n').length;
+
+  expect(ttLines).toBeGreaterThan(tLines);
+});
+
+// `-k` exits non-zero when the run would change the input
+// (Document.pm:154-156). items1.tex needs indenting, so a check run
+// against it must report exit 1.
+test('-k flag exits non-zero when input differs from formatted output', async ({
+  page,
+}) => {
+  await ready(page);
+  await pickExample(page, 'items1.tex');
+  await page.check('#use-check');
+  await runAndWait(page);
+  expect(await stderrText(page)).toContain('[exit 1]');
+});
+
+// `-kv` is `-k` plus the diff dumped to stdout (Check.pm:135-138). Same
+// non-zero exit; on top, the output editor should carry the diff
+// markers instead of (or in addition to) any formatted body.
+test('-kv flag also writes the diff to the output stream', async ({
+  page,
+}) => {
+  await ready(page);
+  await pickExample(page, 'items1.tex');
+  await page.check('#use-checkv');
+  await runAndWait(page);
+  expect(await stderrText(page)).toContain('[exit 1]');
+  expect(await outputText(page)).toMatch(/^@@ \d+ -- \d+ @@/m);
+});
