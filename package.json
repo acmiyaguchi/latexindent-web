@@ -6,7 +6,8 @@
     "prepare-vendor": "scripts/prepare-vendor.sh",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "playwright test"
   },
   "dependencies": {
     "@6over3/zeroperl-ts": "1.0.10",
@@ -17,6 +18,7 @@
     "codemirror": "^6.0.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "vite": "^5.4.0"
   }
 }

@@ -58,11 +58,28 @@ preserves the public API but drops Encode and Win32 dependencies.
 `File::HomeDir` isn't bundled with zeroperl and we don't have a real home
 directory in the browser.
 
+## Tests
+
+End-to-end Playwright tests live in `tests/`:
+
+```sh
+npm install               # one-time, picks up @playwright/test
+npm test                  # spins up vite, runs the spec
+```
+
+The config sets `webServer.reuseExistingServer = true`, so if you already have
+`npm run dev` running on :8765 the test run will use it.
+
 ## Limitations
 
 - Cold load transfers ~25 MB of WASM. Subsequent loads hit cache.
 - First *Run* takes ~25 seconds because latexindent compiles a lot of regex
   in its `BEGIN` blocks.
+- The Perl interpreter is reused across `Run` clicks, so latexindent's
+  module-level globals (loaded settings, etc.) leak between runs. Toggling
+  `-l` or editing the YAML and re-running may give surprising results
+  because previous settings persist in memory. Reload the page to start
+  from a clean state.
 - `-w` / overwrite, log files, and user `indentconfig.yaml` aren't wired up.
 - See `patches/latexindent.patch` for the full list of latexindent features
   that were trimmed (Encode-based filename handling, mainly Win32-relevant).

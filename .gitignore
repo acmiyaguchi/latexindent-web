@@ -4,4 +4,6 @@ vendored/
 public/app/
 public/examples/
 .playwright-cli/
+test-results/
+playwright-report/
 *.log

@@ -142,6 +142,9 @@ examplesEl.addEventListener('change', async () => {
       setDoc(yamlView, yml);
       $('use-yaml').checked = true;
     } else {
+      // Examples without their own YAML restore the seed so the pane
+      // is never silently left blank from a previous edit.
+      setDoc(yamlView, initialYaml);
       $('use-yaml').checked = false;
     }
     $('use-mlb').checked = !!ex.mlb;
