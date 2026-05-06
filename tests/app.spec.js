@@ -24,6 +24,13 @@ const runAndWait = async (page) => {
   });
 };
 
+const pickExample = async (page, input, variant) => {
+  await page.selectOption('#examples-input', { label: input });
+  if (variant !== undefined) {
+    await page.selectOption('#examples-variant', { label: variant });
+  }
+};
+
 test('page loads, version + build time visible', async ({ page }) => {
   await ready(page);
   await expect(page.locator('#version-line')).toContainText('latexindent.pl');
@@ -32,48 +39,45 @@ test('page loads, version + build time visible', async ({ page }) => {
   );
 });
 
-test('selecting an example with YAML populates both editors and -l', async ({
+test('picking an input with multiple variants requires a variant pick', async ({
   page,
 }) => {
   await ready(page);
-  await page.selectOption('#examples', { label: 'align — alignment delimiters' });
+  await pickExample(page, 'tabular2.tex', '+ tabular2.yaml');
   await expect(page.locator('#yaml-host .cm-content')).toContainText(
     'lookForAlignDelims',
   );
   await expect(page.locator('#use-yaml')).toBeChecked();
   await expect(page.locator('#use-mlb')).not.toBeChecked();
   await expect(page.locator('#input-host .cm-content')).toContainText(
-    '\\begin{align}',
+    '\\begin{tabular}',
   );
 });
 
-test('selecting a -m example also checks the -m box', async ({ page }) => {
+test('picking an input with one variant auto-loads it', async ({ page }) => {
   await ready(page);
-  await page.selectOption('#examples', {
-    label: 'text wrap, 20 columns (-m)',
-  });
+  // textwrap1.tex has only one cataloged variant, so the variant dropdown
+  // should auto-select and fire the load handler with no second pick.
+  await pickExample(page, 'textwrap1.tex');
   await expect(page.locator('#use-yaml')).toBeChecked();
   await expect(page.locator('#use-mlb')).toBeChecked();
 });
 
-test('clearing YAML then switching to a no-YAML example restores the seed', async ({
+test('switching inputs clears the previous yaml back to the seed', async ({
   page,
 }) => {
   await ready(page);
-  // Load a YAML-bearing example first.
-  await page.selectOption('#examples', { label: 'align — alignment delimiters' });
+  await pickExample(page, 'tabular2.tex', '+ tabular2.yaml');
   await expect(page.locator('#yaml-host .cm-content')).toContainText(
     'lookForAlignDelims',
   );
-  // Clear the YAML editor.
+  // Clear the YAML editor manually, then switch to a no-yaml input —
+  // the seed must reappear (we never want a silently blank pane).
   await page.click('#yaml-host .cm-content');
   await page.keyboard.press('Control+a');
   await page.keyboard.press('Delete');
   await expect(page.locator('#yaml-host .cm-content')).toHaveText(/^\s*$/);
-  // Switch to an example that has no YAML — pane should NOT stay blank.
-  // Selecting fires an async fetch in the change handler, so we use
-  // a polling assertion here rather than a one-shot read.
-  await page.selectOption('#examples', { label: 'itemize (default rules)' });
+  await pickExample(page, 'items1.tex');
   await expect(page.locator('#yaml-host .cm-content')).toContainText(
     'defaultIndent',
   );
@@ -82,9 +86,7 @@ test('clearing YAML then switching to a no-YAML example restores the seed', asyn
 
 test('-m checkbox actually changes the run output', async ({ page }) => {
   await ready(page);
-  await page.selectOption('#examples', {
-    label: 'text wrap, 20 columns (-m)',
-  });
+  await pickExample(page, 'textwrap1.tex');
 
   // Run with -m on (preset by the example).
   await runAndWait(page);
@@ -116,7 +118,7 @@ const setYaml = async (page, text) => {
 
 test('-l on: custom YAML reaches latexindent', async ({ page }) => {
   await ready(page);
-  await page.selectOption('#examples', { label: 'itemize (default rules)' });
+  await pickExample(page, 'items1.tex');
   await setYaml(page, 'defaultIndent: "XYZ"\n');
   await page.check('#use-yaml');
   await runAndWait(page);
@@ -125,7 +127,7 @@ test('-l on: custom YAML reaches latexindent', async ({ page }) => {
 
 test('-l off: custom YAML is ignored', async ({ page }) => {
   await ready(page);
-  await page.selectOption('#examples', { label: 'itemize (default rules)' });
+  await pickExample(page, 'items1.tex');
   await setYaml(page, 'defaultIndent: "XYZ"\n');
   await page.uncheck('#use-yaml');
   await runAndWait(page);

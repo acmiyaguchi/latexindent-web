@@ -18,4 +18,20 @@ export default defineConfig({
     reuseExistingServer: true,
     timeout: 30_000,
   },
+  projects: [
+    {
+      name: 'app',
+      testMatch: /app\.spec\.js$/,
+    },
+    {
+      // The full-matrix project iterates every cataloged (input, variant)
+      // pair (~194 tests). Each test reloads the page for a fresh
+      // latexindent state, so we run multiple workers in parallel — the
+      // browser HTTP cache keeps the wasm warm within a worker.
+      name: 'matrix',
+      testMatch: /matrix\.spec\.js$/,
+      fullyParallel: true,
+      workers: process.env.CI ? 2 : 4,
+    },
+  ],
 });

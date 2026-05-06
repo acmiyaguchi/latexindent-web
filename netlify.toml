@@ -1,0 +1,3 @@
+[build]
+  command = "npm run prepare-vendor && npm run build"
+  publish = "dist"

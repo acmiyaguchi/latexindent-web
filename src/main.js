@@ -7,6 +7,7 @@ import { indentWithTab } from '@codemirror/commands';
 import { StreamLanguage, indentUnit } from '@codemirror/language';
 import { stex } from '@codemirror/legacy-modes/mode/stex';
 import { yaml } from '@codemirror/legacy-modes/mode/yaml';
+import examples from './examples-catalog.json';
 
 const $ = (id) => document.getElementById(id);
 const setStatus = (s) => { $('status').textContent = s; };
@@ -89,65 +90,114 @@ const setDoc = (view, text) => {
   });
 };
 
-const examples = [
-  {
-    label: 'itemize (default rules)',
-    tex: 'items1.tex',
-  },
-  {
-    label: 'align — alignment delimiters',
-    tex: 'align1.tex',
-    yaml: 'align1.yaml',
-  },
-  {
-    label: 'headings (nested)',
-    tex: 'headings1.tex',
-  },
-  {
-    label: 'one sentence per line (-m)',
-    tex: 'multiple-sentences1.tex',
-    yaml: 'manipulate-sentences.yaml',
-    mlb: true,
-  },
-  {
-    label: 'text wrap, 20 columns (-m)',
-    tex: 'textwrap1.tex',
-    yaml: 'textwrap1.yaml',
-    mlb: true,
-  },
-  {
-    label: 'environments — line break before \\end (-m)',
-    tex: 'env-mlb1.tex',
-    yaml: 'env-mlb12.yaml',
-    mlb: true,
-  },
-];
+const sectionLabel = (s) =>
+  s.replace(/\.tex$/, '').replace(/^(?:sub)*sec-/, '').replace(/-/g, ' ');
 
-const examplesEl = $('examples');
-for (let i = 0; i < examples.length; i++) {
-  const opt = document.createElement('option');
-  opt.value = String(i);
-  opt.textContent = examples[i].label;
-  examplesEl.appendChild(opt);
+const flagControls = [
+  { id: 'mlb', cli: '-m' },
+  { id: 'replace', cli: '-r' },
+  { id: 'only-replace', cli: '-rr' },
+  { id: 'replace-verb', cli: '-rv' },
+  { id: 'silent', cli: '-s' },
+  { id: 'trace', cli: '-t' },
+  { id: 'only-default', cli: '-d' },
+  { id: 'check', cli: '-k' },
+];
+const flagEl = (f) => $(`use-${f.id}`);
+
+const resetFlags = () => {
+  for (const f of flagControls) flagEl(f).checked = false;
+  $('lines-arg').value = '';
+  $('yaml-arg').value = '';
+};
+
+const variantsByInput = Map.groupBy(
+  Object.entries(examples).map(([id, e]) => ({ id, ...e })),
+  (e) => e.input,
+);
+const inputsBySection = Map.groupBy(
+  [...variantsByInput.values()].map((vs) => ({ input: vs[0].input, section: vs[0].section })),
+  (e) => e.section,
+);
+
+const inputEl = $('examples-input');
+for (const sec of [...inputsBySection.keys()].sort()) {
+  const og = document.createElement('optgroup');
+  og.label = sectionLabel(sec);
+  for (const { input } of inputsBySection.get(sec).sort((a, b) => a.input.localeCompare(b.input))) {
+    const opt = document.createElement('option');
+    opt.value = input;
+    opt.textContent = input;
+    og.appendChild(opt);
+  }
+  inputEl.appendChild(og);
 }
-examplesEl.addEventListener('change', async () => {
-  const idx = examplesEl.value;
-  if (idx === '') return;
-  const ex = examples[Number(idx)];
+
+// When a variant is just the previous one plus one new yaml (the docs'
+// cumulative pattern, e.g. quick-start mod1..mod9), label by the *added*
+// yaml so the dropdown stays scannable. Otherwise show the full stack.
+const variantLabel = (curr, prev) => {
+  if (!curr.yamls.length) return 'default';
+  if (prev?.yamls.length && curr.yamls.length === prev.yamls.length + 1) {
+    const prevSet = new Set(prev.yamls);
+    const added = curr.yamls.filter((y) => !prevSet.has(y));
+    if (added.length === 1) return `+ ${added[0]}`;
+  }
+  return `+ ${curr.yamls.join(', ')}`;
+};
+
+const variantEl = $('examples-variant');
+inputEl.addEventListener('change', () => {
+  const variants = (variantsByInput.get(inputEl.value) ?? [])
+    .toSorted((a, b) => a.output.localeCompare(b.output, undefined, { numeric: true }));
+  variantEl.replaceChildren();
+  variantEl.disabled = variants.length === 0;
+  for (let i = 0; i < variants.length; i++) {
+    const opt = document.createElement('option');
+    opt.value = variants[i].id;
+    opt.textContent = variantLabel(variants[i], variants[i - 1]);
+    variantEl.appendChild(opt);
+  }
+  // Even with one option, Chrome won't fire `change` from setting .value,
+  // so dispatch manually so the load handler runs uniformly.
+  if (variants.length > 0) {
+    variantEl.value = variants[0].id;
+    variantEl.dispatchEvent(new Event('change'));
+  }
+});
+
+// YAML's `---` document marker. We use it to delimit concatenated yaml
+// files in the single editor pane: at run time we split on it so each
+// document goes to its own /app/yN.yaml and gets passed to latexindent's
+// `-l a,b,c` comma-separated list. That preserves latexindent's deep-merge
+// semantics for stacked overrides — concatenating into one file made
+// YAML::Tiny warn about duplicate keys when two yamls touched the same
+// top-level setting (tabular2-mod4 etc).
+const YAML_DOC_SEP = '\n---\n';
+
+variantEl.addEventListener('change', async () => {
+  const ex = examples[variantEl.value];
+  if (!ex) return;
   try {
-    const tex = await (await fetch('examples/' + ex.tex)).text();
+    const tex = await (await fetch('examples/' + ex.input)).text();
     setDoc(inputView, tex);
-    if (ex.yaml) {
-      const yml = await (await fetch('examples/' + ex.yaml)).text();
-      setDoc(yamlView, yml);
+    if (ex.yamls.length > 0) {
+      const texts = await Promise.all(
+        ex.yamls.map((y) => fetch('examples/' + y).then((r) => r.text())),
+      );
+      setDoc(yamlView, texts.join(YAML_DOC_SEP));
       $('use-yaml').checked = true;
     } else {
-      // Examples without their own YAML restore the seed so the pane
-      // is never silently left blank from a previous edit.
+      // Restore the seed so the pane isn't silently left blank from a
+      // previous edit on a different example.
       setDoc(yamlView, initialYaml);
       $('use-yaml').checked = false;
     }
-    $('use-mlb').checked = !!ex.mlb;
+    resetFlags();
+    const wanted = new Set(ex.flags ?? []);
+    for (const f of flagControls) flagEl(f).checked = wanted.has(f.id);
+    if (ex.lines) $('lines-arg').value = ex.lines;
+    if (ex.inlineYaml) $('yaml-arg').value = ex.inlineYaml;
   } catch (e) {
     setStatus('Failed to load example: ' + (e?.message ?? e));
   }
@@ -163,6 +213,7 @@ fetch('app/version.json').then((r) => r.ok ? r.json() : null).then((v) => {
   const url = `${v.repo}/commit/${v.sha}`;
   $('version-line').innerHTML = `latexindent.pl ${v.describe} (<a href="${url}">${short}</a>)`;
 }).catch(() => {});
+
 const manifest = (await (await fetch('app/files.txt')).text()).trim().split('\n');
 
 const fs = new MemoryFileSystem({ '/': '' });
@@ -204,11 +255,28 @@ $('run').addEventListener('click', async () => {
     fs.addFile('/app/input.tex', inputView.state.doc.toString());
     const args = [];
     if ($('use-yaml').checked) {
-      fs.addFile('/app/localSettings.yaml', yamlView.state.doc.toString());
-      args.push('-l', '/app/localSettings.yaml');
+      // Split the editor on YAML's `---` document marker so each document
+      // becomes its own file. latexindent then deep-merges them via
+      // `-l a,b,c` instead of seeing one concatenated file with duplicate
+      // top-level keys.
+      const docs = yamlView.state.doc.toString().split(/^---\s*$/m)
+        .map((d) => d.replace(/^\s+/, '')).filter((d) => d.trim());
+      const paths = docs.map((doc, i) => {
+        const path = `/app/localSettings${i}.yaml`;
+        fs.addFile(path, doc);
+        return path;
+      });
+      if (paths.length) args.push('-l', paths.join(','));
     }
-    if ($('use-mlb').checked) args.push('-m');
+    for (const f of flagControls) {
+      if (flagEl(f).checked) args.push(f.cli);
+    }
+    const linesArg = $('lines-arg').value.trim();
+    if (linesArg) args.push('-n', linesArg);
+    const yamlArg = $('yaml-arg').value.trim();
+    if (yamlArg) args.push('-y', yamlArg);
     args.push('/app/input.tex');
+    appendLog('$ latexindent.pl ' + args.join(' '));
     const result = await perl.runFile('/app/latexindent.pl', args);
     setStatus(result?.success ? 'Done.' : 'Failed.');
     appendLog(`[exit ${result?.exitCode ?? '?'}]`);

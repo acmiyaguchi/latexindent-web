@@ -46,14 +46,17 @@ cp "$VENDOR_DIR/yaml-tiny/YAML/Tiny.pm"              "$OUT_DIR/YAML/"
 cp overrides/LatexIndent/UTF8CmdLineArgsFileOperation.pm "$OUT_DIR/LatexIndent/"
 cp overrides/File/HomeDir.pm                             "$OUT_DIR/File/"
 
-echo ">> copying curated examples"
-DEMO_SRC="$VENDOR_DIR/latexindent/documentation/demonstrations"
-for f in items1.tex align1.tex align1.yaml headings1.tex \
-         multiple-sentences1.tex manipulate-sentences.yaml \
-         textwrap1.tex textwrap1.yaml \
-         env-mlb1.tex env-mlb12.yaml; do
-  cp "$DEMO_SRC/$f" "$EXAMPLES_DIR/$f"
-done
+echo ">> scraping examples from upstream docs"
+# Drives the dropdown end-to-end: parses \cmhlistingsfromfile in
+# documentation/sec-*.tex, follows \cref edges to derive (input, yamls,
+# output) triples, sniffs YAML contents to derive flags, copies the
+# referenced demo files into public/examples/, and writes the catalog
+# to src/examples-catalog.json (bundled at build time, no runtime fetch).
+node scripts/scrape-examples.mjs \
+  "$VENDOR_DIR/latexindent/documentation" \
+  "$VENDOR_DIR/latexindent/documentation/demonstrations" \
+  "$EXAMPLES_DIR" \
+  "src/examples-catalog.json"
 
 echo ">> writing manifest"
 ( cd "$OUT_DIR" && find . -type f \( -name '*.pm' -o -name '*.pl' -o -name '*.yaml' \) -printf '%P\n' | sort > files.txt )

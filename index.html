@@ -18,6 +18,10 @@
     #status { padding: 0.4em 0.7em; background: #eef; border: 1px solid #ccd; border-radius: 4px; margin: 0.5em 0; font-size: 13px; }
     button { padding: 0.5em 1em; font-size: 14px; cursor: pointer; }
     button:disabled { opacity: 0.5; cursor: wait; }
+    fieldset#flags-set { border: 1px solid #ccd; border-radius: 4px; padding: 0.4em 0.8em; margin: 0.5em 0; font-size: 13px; }
+    fieldset#flags-set legend { padding: 0 0.4em; color: #555; font-size: 12px; }
+    fieldset#flags-set label { display: inline-block; margin-right: 1em; line-height: 1.8; }
+    fieldset#flags-set input[type="text"] { font-family: ui-monospace, monospace; font-size: 12px; padding: 1px 4px; }
   </style>
 </head>
 <body>
@@ -35,18 +39,54 @@
   <p>
     <button id="run" disabled>Run latexindent</button>
     <label style="margin-left: 1em; font-size: 13px;">
-      <input type="checkbox" id="use-yaml"> Use custom YAML config (<code>-l</code>)
-    </label>
-    <label style="margin-left: 1em; font-size: 13px;">
-      <input type="checkbox" id="use-mlb"> Modify line breaks (<code>-m</code>)
-    </label>
-    <label style="margin-left: 1em; font-size: 13px;">
-      Example:
-      <select id="examples">
+      Input:
+      <select id="examples-input">
         <option value="">— pick one —</option>
       </select>
     </label>
+    <label style="font-size: 13px;">
+      Variant:
+      <select id="examples-variant" disabled>
+        <option value="">—</option>
+      </select>
+    </label>
   </p>
+  <fieldset id="flags-set">
+    <legend>latexindent flags</legend>
+    <label title="Read overrides from the localSettings.yaml editor below">
+      <input type="checkbox" id="use-yaml"> <code>-l</code> localSettings
+    </label>
+    <label title="Allow latexindent to add/remove line breaks per modifyLineBreaks rules">
+      <input type="checkbox" id="use-mlb"> <code>-m</code> modify line breaks
+    </label>
+    <label title="Apply the replacements: block (requires -m)">
+      <input type="checkbox" id="use-replace"> <code>-r</code> replacements
+    </label>
+    <label title="Only do replacements; skip indentation entirely">
+      <input type="checkbox" id="use-only-replace"> <code>-rr</code> only replacements
+    </label>
+    <label title="Replacements are applied even inside verbatim blocks">
+      <input type="checkbox" id="use-replace-verb"> <code>-rv</code> replace inside verbatim
+    </label>
+    <label title="Suppress the log written to stderr">
+      <input type="checkbox" id="use-silent"> <code>-s</code> silent
+    </label>
+    <label title="Verbose trace output in the log">
+      <input type="checkbox" id="use-trace"> <code>-t</code> trace
+    </label>
+    <label title="Ignore any indentconfig — only use defaultSettings.yaml + -l">
+      <input type="checkbox" id="use-only-default"> <code>-d</code> only defaults
+    </label>
+    <label title="Exit non-zero if the formatted output differs from the input">
+      <input type="checkbox" id="use-check"> <code>-k</code> check
+    </label>
+    <label title="Restrict indentation to a line range, e.g. 4-7 or 1,3-5">
+      <code>-n</code> lines: <input type="text" id="lines-arg" size="8" placeholder="4-7">
+    </label>
+    <label title="Inline YAML overrides on the command line, e.g. defaultIndent: '    '">
+      <code>-y</code>: <input type="text" id="yaml-arg" size="28" placeholder="defaultIndent: '    '">
+    </label>
+  </fieldset>
   <div class="row">
     <div class="col">
       <h3>Input (LaTeX)</h3>
@@ -57,7 +97,7 @@
       <div id="output-host" class="editor-host"></div>
     </div>
   </div>
-  <details id="yaml-section" style="margin-top: 1em;">
+  <details id="yaml-section" style="margin-top: 1em;" open>
     <summary style="cursor: pointer; font-weight: bold;">localSettings.yaml (overrides defaultSettings.yaml)</summary>
     <p style="color: #666; font-size: 13px; margin: 0.5em 0;">
       Enable the checkbox above to pass this YAML to latexindent via <code>-l</code>.

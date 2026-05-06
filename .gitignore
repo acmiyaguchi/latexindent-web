@@ -7,3 +7,4 @@ public/examples/
 test-results/
 playwright-report/
 *.log
+src/examples-catalog.json
