@@ -18,10 +18,10 @@
     #status { padding: 0.4em 0.7em; background: #eef; border: 1px solid #ccd; border-radius: 4px; margin: 0.5em 0; font-size: 13px; }
     button { padding: 0.5em 1em; font-size: 14px; cursor: pointer; }
     button:disabled { opacity: 0.5; cursor: wait; }
-    fieldset#flags-set { border: 1px solid #ccd; border-radius: 4px; padding: 0.4em 0.8em; margin: 0.5em 0; font-size: 13px; }
-    fieldset#flags-set legend { padding: 0 0.4em; color: #555; font-size: 12px; }
-    fieldset#flags-set label { display: inline-block; margin-right: 1em; line-height: 1.8; }
-    fieldset#flags-set input[type="text"] { font-family: ui-monospace, monospace; font-size: 12px; padding: 1px 4px; }
+    fieldset#flags-set, fieldset#examples-set { border: 1px solid #ccd; border-radius: 4px; padding: 0.4em 0.8em; margin: 0.5em 0; font-size: 13px; }
+    fieldset#flags-set legend, fieldset#examples-set legend { padding: 0 0.4em; color: #555; font-size: 12px; }
+    fieldset#flags-set label, fieldset#examples-set label { display: inline-block; margin-right: 1em; line-height: 1.8; }
+    fieldset#flags-set input[type="text"], fieldset#examples-set input[type="text"] { font-family: ui-monospace, monospace; font-size: 12px; padding: 1px 4px; }
   </style>
 </head>
 <body>
@@ -38,19 +38,32 @@
   <div id="status">Loading…</div>
   <p>
     <button id="run" disabled>Run latexindent</button>
-    <label style="margin-left: 1em; font-size: 13px;">
+  </p>
+  <fieldset id="examples-set">
+    <legend>example</legend>
+    <label>
       Input:
       <select id="examples-input">
         <option value="">— pick one —</option>
       </select>
     </label>
-    <label style="font-size: 13px;">
+    <label>
       Variant:
       <select id="examples-variant" disabled>
         <option value="">—</option>
       </select>
     </label>
-  </p>
+  </fieldset>
+  <div class="row">
+    <div class="col">
+      <h3>Input (LaTeX)</h3>
+      <div id="input-host" class="editor-host"></div>
+    </div>
+    <div class="col">
+      <h3>Output (indented)</h3>
+      <div id="output-host" class="editor-host"></div>
+    </div>
+  </div>
   <fieldset id="flags-set">
     <legend>latexindent flags</legend>
     <label title="Read overrides from the localSettings.yaml editor below">
@@ -93,16 +106,6 @@
       <code>-y</code>: <input type="text" id="yaml-arg" size="28" placeholder="defaultIndent: '    '">
     </label>
   </fieldset>
-  <div class="row">
-    <div class="col">
-      <h3>Input (LaTeX)</h3>
-      <div id="input-host" class="editor-host"></div>
-    </div>
-    <div class="col">
-      <h3>Output (indented)</h3>
-      <div id="output-host" class="editor-host"></div>
-    </div>
-  </div>
   <details id="yaml-section" style="margin-top: 1em;" open>
     <summary style="cursor: pointer; font-weight: bold;">localSettings.yaml (overrides defaultSettings.yaml)</summary>
     <p style="color: #666; font-size: 13px; margin: 0.5em 0;">
