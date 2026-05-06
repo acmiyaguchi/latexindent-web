@@ -6,12 +6,23 @@ import { keymap } from '@codemirror/view';
 import { indentWithTab } from '@codemirror/commands';
 import { StreamLanguage, indentUnit } from '@codemirror/language';
 import { stex } from '@codemirror/legacy-modes/mode/stex';
+import { yaml } from '@codemirror/legacy-modes/mode/yaml';
 
 const $ = (id) => document.getElementById(id);
 const setStatus = (s) => { $('status').textContent = s; };
 const decode = (d) => typeof d === 'string' ? d : new TextDecoder().decode(d);
 
 const stexLang = StreamLanguage.define(stex);
+const yamlLang = StreamLanguage.define(yaml);
+
+const initialYaml = `# Overrides keys from defaultSettings.yaml.
+# Example: change the indent character to two spaces.
+defaultIndent: "  "
+
+# Example: increase indentation inside itemize.
+indentRules:
+  itemize: "  "
+`;
 
 const initialDoc = `\\documentclass{article}
 \\begin{document}
@@ -36,6 +47,18 @@ const inputView = new EditorView({
     EditorState.tabSize.of(4),
     EditorView.lineWrapping,
     stexLang,
+  ],
+});
+
+const yamlView = new EditorView({
+  doc: initialYaml,
+  parent: $('yaml-host'),
+  extensions: [
+    basicSetup,
+    keymap.of([indentWithTab]),
+    EditorState.tabSize.of(2),
+    EditorView.lineWrapping,
+    yamlLang,
   ],
 });
 
@@ -100,7 +123,13 @@ $('run').addEventListener('click', async () => {
   };
   try {
     fs.addFile('/app/input.tex', inputView.state.doc.toString());
-    const result = await perl.runFile('/app/latexindent.pl', ['/app/input.tex']);
+    const args = [];
+    if ($('use-yaml').checked) {
+      fs.addFile('/app/localSettings.yaml', yamlView.state.doc.toString());
+      args.push('-l', '/app/localSettings.yaml');
+    }
+    args.push('/app/input.tex');
+    const result = await perl.runFile('/app/latexindent.pl', args);
     setStatus(result?.success ? 'Done.' : 'Failed.');
     appendLog(`[exit ${result?.exitCode ?? '?'}]`);
     if (result && !result.success && result.error) appendLog(result.error);

@@ -12,6 +12,7 @@
     textarea { width: 100%; min-height: 380px; font-family: ui-monospace, monospace; font-size: 13px; box-sizing: border-box; }
     .editor-host { border: 1px solid #ccc; border-radius: 4px; }
     .editor-host .cm-editor { height: 380px; }
+    #yaml-host .cm-editor { height: 260px; }
     .editor-host .cm-scroller { font-family: ui-monospace, monospace; font-size: 13px; }
     #stderr { height: 140px; background: #f7f7f7; border: 1px solid #ccc; padding: 0.5em; overflow: auto; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 12px; margin-top: 0.5em; }
     #status { padding: 0.4em 0.7em; background: #eef; border: 1px solid #ccd; border-radius: 4px; margin: 0.5em 0; font-size: 13px; }
@@ -31,7 +32,12 @@
     <a href="https://github.com/6over3/zeroperl">zeroperl</a>
   </p>
   <div id="status">Loading…</div>
-  <p><button id="run" disabled>Run latexindent</button></p>
+  <p>
+    <button id="run" disabled>Run latexindent</button>
+    <label style="margin-left: 1em; font-size: 13px;">
+      <input type="checkbox" id="use-yaml"> Use custom YAML config (<code>-l</code>)
+    </label>
+  </p>
   <div class="row">
     <div class="col">
       <h3>Input (LaTeX)</h3>
@@ -42,6 +48,15 @@
       <div id="output-host" class="editor-host"></div>
     </div>
   </div>
+  <details id="yaml-section" style="margin-top: 1em;">
+    <summary style="cursor: pointer; font-weight: bold;">localSettings.yaml (overrides defaultSettings.yaml)</summary>
+    <p style="color: #666; font-size: 13px; margin: 0.5em 0;">
+      Enable the checkbox above to pass this YAML to latexindent via <code>-l</code>.
+      See <a href="https://latexindentpl.readthedocs.io/en/latest/sec-default-user-local.html">the manual</a>
+      for the full schema, and <code>defaultSettings.yaml</code> for every available key.
+    </p>
+    <div id="yaml-host" class="editor-host"></div>
+  </details>
   <h3>stderr / log</h3>
   <pre id="stderr"></pre>
 
