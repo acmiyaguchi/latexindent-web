@@ -74,11 +74,17 @@
     <label title="Verbose trace output in the log">
       <input type="checkbox" id="use-trace"> <code>-t</code> trace
     </label>
+    <label title="More verbose trace output (super-set of -t)">
+      <input type="checkbox" id="use-ttrace"> <code>-tt</code> ttrace
+    </label>
     <label title="Ignore any indentconfig — only use defaultSettings.yaml + -l">
       <input type="checkbox" id="use-only-default"> <code>-d</code> only defaults
     </label>
     <label title="Exit non-zero if the formatted output differs from the input">
       <input type="checkbox" id="use-check"> <code>-k</code> check
+    </label>
+    <label title="Like -k but also writes the diff to the output stream">
+      <input type="checkbox" id="use-checkv"> <code>-kv</code> checkv
     </label>
     <label title="Restrict indentation to a line range, e.g. 4-7 or 1,3-5">
       <code>-n</code> lines: <input type="text" id="lines-arg" size="8" placeholder="4-7">
@@ -108,6 +114,10 @@
   </details>
   <h3>stderr / log</h3>
   <pre id="stderr"></pre>
+  <details id="logfile-section" style="margin-top: 0.5em;">
+    <summary style="cursor: pointer; font-weight: bold;">indent.log <span style="color:#888; font-weight: normal; font-size: 12px;">(latexindent's logfile — content of <code>-t</code> trace, <code>-sl</code> screenlog, etc.)</span></summary>
+    <pre id="logfile" style="height: 200px; background: #f7f7f7; border: 1px solid #ccc; padding: 0.5em; overflow: auto; white-space: pre; font-family: ui-monospace, monospace; font-size: 12px; margin-top: 0.5em;"></pre>
+  </details>
 
   <footer style="margin-top: 2em; padding-top: 1em; border-top: 1px solid #eee; color: #888; font-size: 12px; text-align: center;">
     built <span id="build-time">…</span>

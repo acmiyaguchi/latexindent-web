@@ -100,8 +100,10 @@ const flagControls = [
   { id: 'replace-verb', cli: '-rv' },
   { id: 'silent', cli: '-s' },
   { id: 'trace', cli: '-t' },
+  { id: 'ttrace', cli: '-tt' },
   { id: 'only-default', cli: '-d' },
   { id: 'check', cli: '-k' },
+  { id: 'checkv', cli: '-kv' },
 ];
 const flagEl = (f) => $(`use-${f.id}`);
 
@@ -298,6 +300,24 @@ $('run').addEventListener('click', async () => {
     setStatus(result?.success ? 'Done.' : 'Failed.');
     appendLog(`[exit ${result?.exitCode ?? '?'}]`);
     if (result && !result.success && result.error) appendLog(result.error);
+
+    // latexindent writes its trace/info/warn output to indent.log in the
+    // cruft directory (which defaults to dirname of the input — /app here).
+    // Surface that file so flags like `-t` (trace) and `-sl` (screenlog)
+    // have a visible effect; without this it goes to a file in the
+    // in-memory FS where the user can't see it.
+    const logNode = fs.lookup('/app/indent.log');
+    const logEl = $('logfile');
+    if (logNode?.type === 'file') {
+      const bytes = logNode.content instanceof Blob
+        ? new Uint8Array(await logNode.content.arrayBuffer())
+        : logNode.content;
+      logEl.textContent = decode(bytes);
+      // Auto-open when the user explicitly asked for verbose output.
+      if (flagEl({ id: 'trace' }).checked) $('logfile-section').open = true;
+    } else {
+      logEl.textContent = '';
+    }
   } catch (e) {
     setStatus('Failed.');
     appendLog('[threw] ' + (e?.message ?? e));

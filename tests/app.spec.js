@@ -150,3 +150,18 @@ test('switching variants between runs actually changes the output', async ({
   const out7 = await outputText(page);
   expect(out7).not.toEqual(out6);
 });
+
+// `-t` only adds TRACE: lines to indent.log; the file is read back from
+// the in-memory FS into the #logfile pane. Without that wiring the flag
+// looked inert because all logger output went to a file the user couldn't
+// see. The auto-open behavior is a UX cue that the flag did something.
+test('-t flag populates indent.log and auto-opens the pane', async ({
+  page,
+}) => {
+  await ready(page);
+  await pickExample(page, 'items1.tex');
+  await page.check('#use-trace');
+  await runAndWait(page);
+  await expect(page.locator('#logfile')).toContainText(/TRACE:/);
+  await expect(page.locator('#logfile-section')).toHaveJSProperty('open', true);
+});
