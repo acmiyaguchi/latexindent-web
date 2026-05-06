@@ -83,6 +83,73 @@ const setOutput = (text) => {
   });
 };
 
+const setDoc = (view, text) => {
+  view.dispatch({
+    changes: { from: 0, to: view.state.doc.length, insert: text },
+  });
+};
+
+const examples = [
+  {
+    label: 'itemize (default rules)',
+    tex: 'items1.tex',
+  },
+  {
+    label: 'align — alignment delimiters',
+    tex: 'align1.tex',
+    yaml: 'align1.yaml',
+  },
+  {
+    label: 'headings (nested)',
+    tex: 'headings1.tex',
+  },
+  {
+    label: 'one sentence per line (-m)',
+    tex: 'multiple-sentences1.tex',
+    yaml: 'manipulate-sentences.yaml',
+    mlb: true,
+  },
+  {
+    label: 'text wrap, 20 columns (-m)',
+    tex: 'textwrap1.tex',
+    yaml: 'textwrap1.yaml',
+    mlb: true,
+  },
+  {
+    label: 'environments — line break before \\end (-m)',
+    tex: 'env-mlb1.tex',
+    yaml: 'env-mlb12.yaml',
+    mlb: true,
+  },
+];
+
+const examplesEl = $('examples');
+for (let i = 0; i < examples.length; i++) {
+  const opt = document.createElement('option');
+  opt.value = String(i);
+  opt.textContent = examples[i].label;
+  examplesEl.appendChild(opt);
+}
+examplesEl.addEventListener('change', async () => {
+  const idx = examplesEl.value;
+  if (idx === '') return;
+  const ex = examples[Number(idx)];
+  try {
+    const tex = await (await fetch('examples/' + ex.tex)).text();
+    setDoc(inputView, tex);
+    if (ex.yaml) {
+      const yml = await (await fetch('examples/' + ex.yaml)).text();
+      setDoc(yamlView, yml);
+      $('use-yaml').checked = true;
+    } else {
+      $('use-yaml').checked = false;
+    }
+    $('use-mlb').checked = !!ex.mlb;
+  } catch (e) {
+    setStatus('Failed to load example: ' + (e?.message ?? e));
+  }
+});
+
 let stderrBuf = '';
 let stdoutBuf = '';
 
@@ -137,6 +204,7 @@ $('run').addEventListener('click', async () => {
       fs.addFile('/app/localSettings.yaml', yamlView.state.doc.toString());
       args.push('-l', '/app/localSettings.yaml');
     }
+    if ($('use-mlb').checked) args.push('-m');
     args.push('/app/input.tex');
     const result = await perl.runFile('/app/latexindent.pl', args);
     setStatus(result?.success ? 'Done.' : 'Failed.');

@@ -12,9 +12,10 @@ YAML_TINY_URL="https://raw.githubusercontent.com/Perl-Toolchain-Gang/YAML-Tiny/m
 
 VENDOR_DIR="vendored"
 OUT_DIR="public/app"
+EXAMPLES_DIR="public/examples"
 
-rm -rf "$VENDOR_DIR" "$OUT_DIR"
-mkdir -p "$VENDOR_DIR" "$OUT_DIR/LatexIndent" "$OUT_DIR/YAML" "$OUT_DIR/File"
+rm -rf "$VENDOR_DIR" "$OUT_DIR" "$EXAMPLES_DIR"
+mkdir -p "$VENDOR_DIR" "$OUT_DIR/LatexIndent" "$OUT_DIR/YAML" "$OUT_DIR/File" "$EXAMPLES_DIR"
 
 echo ">> cloning latexindent.pl@$LATEXINDENT_REF"
 git clone --depth 1 --branch "$LATEXINDENT_REF" "$LATEXINDENT_REPO" "$VENDOR_DIR/latexindent" >/dev/null
@@ -44,6 +45,15 @@ cp "$VENDOR_DIR/yaml-tiny/YAML/Tiny.pm"              "$OUT_DIR/YAML/"
 # Full-rewrite files (too large to keep as patches against upstream)
 cp overrides/LatexIndent/UTF8CmdLineArgsFileOperation.pm "$OUT_DIR/LatexIndent/"
 cp overrides/File/HomeDir.pm                             "$OUT_DIR/File/"
+
+echo ">> copying curated examples"
+DEMO_SRC="$VENDOR_DIR/latexindent/documentation/demonstrations"
+for f in items1.tex align1.tex align1.yaml headings1.tex \
+         multiple-sentences1.tex manipulate-sentences.yaml \
+         textwrap1.tex textwrap1.yaml \
+         env-mlb1.tex env-mlb12.yaml; do
+  cp "$DEMO_SRC/$f" "$EXAMPLES_DIR/$f"
+done
 
 echo ">> writing manifest"
 ( cd "$OUT_DIR" && find . -type f \( -name '*.pm' -o -name '*.pl' -o -name '*.yaml' \) -printf '%P\n' | sort > files.txt )

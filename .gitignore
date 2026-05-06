@@ -2,5 +2,6 @@ node_modules/
 dist/
 vendored/
 public/app/
+public/examples/
 .playwright-cli/
 *.log
