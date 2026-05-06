@@ -104,11 +104,9 @@ test('-m checkbox actually changes the run output', async ({ page }) => {
   );
 });
 
-// The Perl interpreter is reused across runs, so latexindent's globals
-// (loaded settings, etc.) leak between invocations. To test "does -l
-// actually do something?" we have to start each scenario from a fresh
-// page load — otherwise a previous run's YAML keeps influencing the
-// next run regardless of the checkbox.
+// Each Run rebuilds the Perl interpreter (see createPerl in main.js) so
+// latexindent's package globals start clean every invocation. Tests can
+// therefore rely on `-l on/off` toggles within a single page session.
 const setYaml = async (page, text) => {
   await page.click('#yaml-host .cm-content');
   await page.keyboard.press('Control+a');
@@ -132,4 +130,23 @@ test('-l off: custom YAML is ignored', async ({ page }) => {
   await page.uncheck('#use-yaml');
   await runAndWait(page);
   expect(await outputText(page)).not.toContain('XYZ');
+});
+
+// Regression: switching variants in one session and clicking Run twice
+// used to produce identical output — DBS6 sets optionalArguments and
+// DBS7 sets mandatoryArguments, but a stale interpreter would deep-merge
+// the new -l on top of the previous run's already-loaded settings, so
+// both arg blocks would end up active and neither expected output ever
+// rendered. createPerl per Run resolves it.
+test('switching variants between runs actually changes the output', async ({
+  page,
+}) => {
+  await ready(page);
+  await pickExample(page, 'mycommand2.tex', '+ DBS6.yaml');
+  await runAndWait(page);
+  const out6 = await outputText(page);
+  await pickExample(page, 'mycommand2.tex', '+ DBS7.yaml');
+  await runAndWait(page);
+  const out7 = await outputText(page);
+  expect(out7).not.toEqual(out6);
 });

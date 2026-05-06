@@ -223,8 +223,16 @@ await Promise.all(manifest.map(async (path) => {
   fs.addFile('/app/' + path, new Uint8Array(await r.arrayBuffer()));
 }));
 
-setStatus('Loading Perl runtime (~25MB wasm, first load is slow)…');
-const perl = await ZeroPerl.create({
+// latexindent stores its merged settings in module-level Perl globals
+// (`%mainSettings`, etc.) that persist across `runFile` invocations. If we
+// reused one ZeroPerl instance, switching variants and re-running would
+// deep-merge the new -l on top of the previous run's settings instead of
+// starting clean — see the dbs6/dbs7 case where neither output ever shows
+// because the leftover optionalArguments/mandatoryArguments overlap. So we
+// recreate the interpreter per Run. The wasm fetch hits the browser HTTP
+// cache after the first load, so re-init is a couple of seconds rather
+// than the ~25s cold start.
+const createPerl = () => ZeroPerl.create({
   fileSystem: fs,
   fetch: () => fetch(wasmUrl),
   stdout: (data) => {
@@ -237,6 +245,10 @@ const perl = await ZeroPerl.create({
   },
 });
 
+setStatus('Loading Perl runtime (~25MB wasm, first load is slow)…');
+let perl = await createPerl();
+let perlIsFresh = true;
+
 setStatus(`Ready. Loaded ${manifest.length} Perl files. Click Run.`);
 $('run').disabled = false;
 
@@ -246,6 +258,11 @@ $('run').addEventListener('click', async () => {
   stdoutBuf = '';
   setOutput('');
   $('stderr').textContent = '';
+  if (!perlIsFresh) {
+    setStatus('Resetting Perl interpreter…');
+    perl = await createPerl();
+  }
+  perlIsFresh = false;
   setStatus('Running…');
   const appendLog = (line) => {
     stderrBuf += (stderrBuf && !stderrBuf.endsWith('\n') ? '\n' : '') + line + '\n';
