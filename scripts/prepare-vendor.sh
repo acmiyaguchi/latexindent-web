@@ -19,6 +19,9 @@ mkdir -p "$VENDOR_DIR" "$OUT_DIR/LatexIndent" "$OUT_DIR/YAML" "$OUT_DIR/File"
 echo ">> cloning latexindent.pl@$LATEXINDENT_REF"
 git clone --depth 1 --branch "$LATEXINDENT_REF" "$LATEXINDENT_REPO" "$VENDOR_DIR/latexindent" >/dev/null
 
+LATEXINDENT_SHA=$(git -C "$VENDOR_DIR/latexindent" rev-parse HEAD)
+LATEXINDENT_DESCRIBE=$(git -C "$VENDOR_DIR/latexindent" describe --tags --always)
+
 PATCHES_DIR="$PWD/patches"
 
 echo ">> applying patches/latexindent.patch"
@@ -44,5 +47,15 @@ cp overrides/File/HomeDir.pm                             "$OUT_DIR/File/"
 
 echo ">> writing manifest"
 ( cd "$OUT_DIR" && find . -type f \( -name '*.pm' -o -name '*.pl' -o -name '*.yaml' \) -printf '%P\n' | sort > files.txt )
+
+echo ">> writing version.json (latexindent $LATEXINDENT_DESCRIBE @ $LATEXINDENT_SHA)"
+cat > "$OUT_DIR/version.json" <<EOF
+{
+  "ref": "$LATEXINDENT_REF",
+  "describe": "$LATEXINDENT_DESCRIBE",
+  "sha": "$LATEXINDENT_SHA",
+  "repo": "https://github.com/cmhughes/latexindent.pl"
+}
+EOF
 
 echo "ok — $(wc -l < "$OUT_DIR/files.txt") files in $OUT_DIR"

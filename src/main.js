@@ -84,6 +84,12 @@ let stderrBuf = '';
 let stdoutBuf = '';
 
 setStatus('Fetching latexindent source files…');
+fetch('app/version.json').then((r) => r.ok ? r.json() : null).then((v) => {
+  if (!v) return;
+  const short = (v.sha || '').slice(0, 7);
+  const url = `${v.repo}/commit/${v.sha}`;
+  $('version-line').innerHTML = `latexindent.pl ${v.describe} (<a href="${url}">${short}</a>)`;
+}).catch(() => {});
 const manifest = (await (await fetch('app/files.txt')).text()).trim().split('\n');
 
 const fs = new MemoryFileSystem({ '/': '' });
